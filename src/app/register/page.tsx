@@ -2,7 +2,9 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { Store, ArrowRight, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -11,31 +13,36 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [isError, setIsError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   async function handleRegister(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
-    setMessage("");
-    setIsError(false);
+    setErrorMessage("");
+    setSuccessMessage("");
 
     if (fullName.trim().length < 2) {
-      setIsError(true);
-      setMessage("Please enter your full name.");
+      setErrorMessage("Please enter your full name.");
       return;
     }
 
     if (password.length < 8) {
-      setIsError(true);
-      setMessage("Password must contain at least 8 characters.");
+      setErrorMessage("Password must contain at least 8 characters.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage("Passwords do not match.");
       return;
     }
 
     setLoading(true);
 
     try {
+      const redirectUrl = `${window.location.origin}/auth/callback?next=/onboarding`;
+
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
@@ -43,7 +50,7 @@ export default function RegisterPage() {
           data: {
             full_name: fullName.trim(),
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+          emailRedirectTo: redirectUrl,
         },
       });
 
@@ -52,20 +59,17 @@ export default function RegisterPage() {
       }
 
       if (data.session) {
-        setMessage("Account created successfully! Redirecting...");
-        router.push("/dashboard");
+        setSuccessMessage("Account created successfully! Preparing store setup...");
+        router.push("/onboarding");
         router.refresh();
       } else {
-        setMessage(
-          "Registration successful! Please check your email and confirm your account before logging in."
+        setSuccessMessage(
+          "Registration successful! Please check your email inbox to confirm your account."
         );
       }
-    } catch (error: unknown) {
-      setIsError(true);
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong. Please try again."
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error ? err.message : "Something went wrong. Please try again."
       );
     } finally {
       setLoading(false);
@@ -73,80 +77,130 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-950 p-6 text-white">
-      <form
-        onSubmit={handleRegister}
-        className="w-full max-w-md space-y-5 rounded-2xl border border-gray-700 bg-gray-900 p-8 shadow-xl"
-      >
-        <div className="text-center">
-          <h1 className="text-3xl font-bold">
+    <main className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-white selection:bg-blue-500 selection:text-white">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600/10 border border-blue-500/20 text-blue-500 mb-4 shadow-lg shadow-blue-500/5">
+            <Store className="w-7 h-7" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-white">
             Qelanto Business OS
           </h1>
-          <p className="mt-2 text-gray-400">
-            Create your owner account
+          <p className="mt-1 text-sm text-slate-400">
+            Create your shop owner account
           </p>
         </div>
 
-        <input
-          required
-          type="text"
-          placeholder="Full name"
-          autoComplete="name"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          className="w-full rounded-lg border border-gray-700 bg-gray-800 p-3 outline-none focus:border-blue-500"
-        />
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-8 shadow-2xl backdrop-blur-sm">
+          {errorMessage && (
+            <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
 
-        <input
-          required
-          type="email"
-          placeholder="Email address"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg border border-gray-700 bg-gray-800 p-3 outline-none focus:border-blue-500"
-        />
+          {successMessage && (
+            <div className="mb-6 flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-400">
+              <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
+              <span>{successMessage}</span>
+            </div>
+          )}
 
-        <input
-          required
-          minLength={8}
-          type="password"
-          placeholder="Password (minimum 8 characters)"
-          autoComplete="new-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-lg border border-gray-700 bg-gray-800 p-3 outline-none focus:border-blue-500"
-        />
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-300 uppercase tracking-wider mb-1.5">
+                Full Name
+              </label>
+              <input
+                type="text"
+                required
+                autoComplete="name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Rajesh Kumar"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-3 text-sm text-white placeholder-slate-500 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
 
-        {message && (
-          <p
-            role="status"
-            className={`text-sm ${
-              isError ? "text-red-400" : "text-emerald-400"
-            }`}
-          >
-            {message}
-          </p>
-        )}
+            <div>
+              <label className="block text-xs font-medium text-slate-300 uppercase tracking-wider mb-1.5">
+                Email Address
+              </label>
+              <input
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="rajesh@yourretailshop.com"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-3 text-sm text-white placeholder-slate-500 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
 
-        <button
-          disabled={loading}
-          type="submit"
-          className="w-full rounded-lg bg-blue-600 p-3 font-semibold transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {loading ? "Creating account..." : "Create Account"}
-        </button>
+            <div>
+              <label className="block text-xs font-medium text-slate-300 uppercase tracking-wider mb-1.5">
+                Password (min 8 characters)
+              </label>
+              <input
+                type="password"
+                required
+                minLength={8}
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-3 text-sm text-white placeholder-slate-500 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
 
-        <p className="text-center text-sm text-gray-400">
-          Already registered?{" "}
-          <a
-            href="/login"
-            className="text-blue-400 hover:underline"
-          >
-            Login
-          </a>
-        </p>
-      </form>
+            <div>
+              <label className="block text-xs font-medium text-slate-300 uppercase tracking-wider mb-1.5">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                required
+                minLength={8}
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-3 text-sm text-white placeholder-slate-500 transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Creating Account...
+                </>
+              ) : (
+                <>
+                  Create Owner Account
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-6 pt-6 border-t border-slate-800 text-center">
+            <p className="text-xs text-slate-400">
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="font-semibold text-blue-400 hover:text-blue-300 transition"
+              >
+                Sign in
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

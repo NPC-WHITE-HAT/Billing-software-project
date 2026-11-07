@@ -2,18 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function GET(request: NextRequest) {
-  const url = new URL(request.url);
-  const code = url.searchParams.get("code");
-
-  const response = NextResponse.redirect(
-    new URL("/register?verified=1", request.url)
-  );
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get("code");
+  const next = requestUrl.searchParams.get("next") || "/dashboard";
 
   if (!code) {
     return NextResponse.redirect(
       new URL("/login?error=missing_code", request.url)
     );
   }
+
+  const response = NextResponse.redirect(new URL(next, request.url));
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,7 +35,7 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     return NextResponse.redirect(
-      new URL("/register?error=verification_failed", request.url)
+      new URL(`/login?error=${encodeURIComponent(error.message)}`, request.url)
     );
   }
 
