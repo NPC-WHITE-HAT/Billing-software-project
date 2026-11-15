@@ -50,21 +50,22 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-white selection:bg-blue-500 selection:text-white">
+    <main className="public-auth flex min-h-screen items-center justify-center p-4 selection:bg-blue-500 selection:text-white sm:p-6">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600/10 border border-blue-500/20 text-blue-500 mb-4 shadow-lg shadow-blue-500/5">
             <KeyRound className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">
-            Set New Password
+          <p className="text-sm font-semibold text-blue-700">Qelanto Business OS</p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">
+            Set a New Password
           </h1>
           <p className="mt-1 text-sm text-slate-400">
             Enter your new password to regain access
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-8 shadow-2xl backdrop-blur-sm">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-xl sm:p-8">
           {errorMessage && (
             <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
               <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />

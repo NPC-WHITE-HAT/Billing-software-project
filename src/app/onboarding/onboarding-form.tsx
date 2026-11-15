@@ -87,16 +87,17 @@ export default function OnboardingForm({ userEmail }: Props) {
   }
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/95 p-8 shadow-2xl backdrop-blur-md">
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600/10 border border-blue-500/20 text-blue-500 mb-3 shadow-lg shadow-blue-500/5">
+    <div className="rounded-2xl border border-slate-800 bg-slate-900/95 p-5 shadow-xl sm:p-8">
+      <div className="mb-6 text-center sm:mb-8">
+        <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-600/10 text-blue-500">
           <Store className="w-7 h-7" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">
+        <p className="text-sm font-semibold text-blue-700">Qelanto Business OS</p>
+        <h1 className="mt-1 text-xl font-bold tracking-tight text-white sm:text-2xl">
           Set Up Your Retail Store
         </h1>
         <p className="mt-1 text-sm text-slate-400">
-          Configure your shop profile, location and invoicing preferences
+          Configure your shop profile, location and invoicing preferences.
         </p>
       </div>
 
@@ -194,8 +195,8 @@ export default function OnboardingForm({ userEmail }: Props) {
             <span>Store Address & Tax</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="sm:col-span-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="sm:col-span-2 lg:col-span-3">
               <label className="block text-xs font-medium text-slate-300 uppercase tracking-wider mb-1.5">
                 Street Address
               </label>
@@ -247,7 +248,7 @@ export default function OnboardingForm({ userEmail }: Props) {
               />
             </div>
 
-            <div className="sm:col-span-3">
+            <div className="sm:col-span-2 lg:col-span-3">
               <label className="block text-xs font-medium text-slate-300 uppercase tracking-wider mb-1.5">
                 GSTIN (Optional)
               </label>

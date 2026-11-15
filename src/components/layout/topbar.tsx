@@ -19,50 +19,49 @@ export default function Topbar({ businessName, currency }: TopbarProps) {
           timeZone: "Asia/Kolkata",
           hour: "2-digit",
           minute: "2-digit",
-          second: "2-digit",
           hour12: true,
         }).format(new Date())
       );
     };
     updateTime();
-    const interval = setInterval(updateTime, 1000);
+    const interval = setInterval(updateTime, 60_000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <header className="h-16 border-b border-slate-800 bg-slate-900/60 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-20">
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
+    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6">
+      <div className="flex min-w-0 items-center gap-4">
+        <div className="flex min-w-0 items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-sm font-semibold text-slate-200">{businessName}</span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">
+          <span className="truncate text-sm font-semibold text-slate-800">{businessName}</span>
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-600">
             {currency}
           </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-4">
         {time && (
-          <div className="hidden sm:flex items-center gap-1.5 text-xs font-mono text-slate-400 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-800">
-            <Clock className="w-3.5 h-3.5 text-slate-500" />
+          <div className="hidden items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 font-mono text-xs text-slate-500 sm:flex">
+            <Clock className="h-3.5 w-3.5 text-slate-400" />
             <span>{time} IST</span>
           </div>
         )}
 
-        <div className="hidden md:flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1.5 rounded-lg border border-emerald-500/20">
+        <div className="hidden items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs text-emerald-700 md:flex">
           <ShieldCheck className="w-3.5 h-3.5" />
           <span>Single-Shop Retail OS</span>
         </div>
 
         <Link
           href="/billing"
-          className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-500 transition"
+          className="flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-700 sm:px-4"
         >
           <ReceiptText className="w-3.5 h-3.5" />
-          <span>Create Invoice (F2)</span>
+          <span className="hidden sm:inline">Create Invoice (F2)</span>
+          <span className="sm:hidden">Invoice</span>
         </Link>
       </div>
     </header>
   );
 }
-

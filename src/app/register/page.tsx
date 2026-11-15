@@ -17,11 +17,13 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [emailConfirmationPending, setEmailConfirmationPending] = useState(false);
 
   async function handleRegister(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMessage("");
     setSuccessMessage("");
+    setEmailConfirmationPending(false);
 
     if (fullName.trim().length < 2) {
       setErrorMessage("Please enter your full name.");
@@ -63,6 +65,7 @@ export default function RegisterPage() {
         router.push("/onboarding");
         router.refresh();
       } else {
+        setEmailConfirmationPending(true);
         setSuccessMessage(
           "Registration successful! Please check your email inbox to confirm your account."
         );
@@ -77,21 +80,43 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-white selection:bg-blue-500 selection:text-white">
+    <main className="public-auth flex min-h-screen items-center justify-center p-4 selection:bg-blue-500 selection:text-white sm:p-6">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600/10 border border-blue-500/20 text-blue-500 mb-4 shadow-lg shadow-blue-500/5">
             <Store className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">
-            Qelanto Business OS
+          <p className="text-sm font-semibold text-blue-700">Qelanto Business OS</p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">
+            {emailConfirmationPending ? "Registration successful" : "Create your owner account"}
           </h1>
           <p className="mt-1 text-sm text-slate-400">
-            Create your shop owner account
+            {emailConfirmationPending
+              ? "One more step to secure your account"
+              : "Set up your account to start managing your store"}
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-8 shadow-2xl backdrop-blur-sm">
+        {emailConfirmationPending ? (
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 text-center shadow-xl sm:p-8">
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10">
+              <CheckCircle2 className="h-7 w-7 text-emerald-600" />
+            </div>
+            <p className="text-sm leading-6 text-slate-400">
+              We sent a confirmation link to{" "}
+              <span className="font-semibold text-white">{email}</span>. Confirm
+              your email address to finish creating your owner account.
+            </p>
+            <Link
+              href="/login"
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500"
+            >
+              Return to login
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        ) : (
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-xl sm:p-8">
           {errorMessage && (
             <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
               <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
@@ -200,6 +225,7 @@ export default function RegisterPage() {
             </p>
           </div>
         </div>
+        )}
       </div>
     </main>
   );

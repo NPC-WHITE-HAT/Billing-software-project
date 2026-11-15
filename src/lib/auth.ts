@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "./supabase/server";
 
 export interface CurrentBusinessContext {
@@ -33,22 +34,27 @@ export interface CurrentBusinessContext {
   };
 }
 
-export async function getCurrentUser() {
+const getAuthenticatedUser = cache(async () => {
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) {
     return null;
   }
   return user;
+});
+
+export async function getCurrentUser() {
+  return getAuthenticatedUser();
 }
 
-export async function getCurrentBusinessContext(): Promise<CurrentBusinessContext | null> {
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+async function fetchCurrentBusinessContext(): Promise<CurrentBusinessContext | null> {
+  const user = await getAuthenticatedUser();
 
-  if (userError || !user) {
+  if (!user) {
     return null;
   }
+
+  const supabase = await createClient();
 
   // 1. Fetch business membership for this user
   const { data: members, error: memberError } = await supabase
@@ -63,31 +69,42 @@ export async function getCurrentBusinessContext(): Promise<CurrentBusinessContex
 
   const membership = members[0];
   const businessId = membership.business_id;
+  const expectedBusinessId = "ccb5b6a7-9e23-4f10-8471-26afe6033487";
 
-  // 2. Fetch business details
-  const { data: business, error: bizError } = await supabase
-    .from("businesses")
-    .select("*")
-    .eq("id", businessId)
-    .single();
+  if (process.env.NODE_ENV === "development") {
+    console.info("[business-context] Resolved membership business", {
+      businessId,
+      expectedBusinessId,
+      matchesExpectedBusinessId: businessId === expectedBusinessId,
+    });
+  }
+
+  // 2. Fetch business details, settings, and profile in parallel
+  const [businessResult, settingsResult, profileResult] = await Promise.all([
+    supabase
+      .from("businesses")
+      .select("*")
+      .eq("id", businessId)
+      .single(),
+    supabase
+      .from("business_settings")
+      .select("*")
+      .eq("business_id", businessId)
+      .maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .maybeSingle(),
+  ]);
+
+  const { data: business, error: bizError } = businessResult;
+  const { data: settings } = settingsResult;
+  const { data: profile } = profileResult;
 
   if (bizError || !business) {
     return null;
   }
-
-  // 3. Fetch settings
-  const { data: settings } = await supabase
-    .from("business_settings")
-    .select("*")
-    .eq("business_id", businessId)
-    .maybeSingle();
-
-  // 4. Fetch profile (if exists, or fallback to user metadata)
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", user.id)
-    .maybeSingle();
 
   const fullName = profile?.full_name || (user.user_metadata?.full_name as string) || user.email?.split("@")[0] || "User";
 
@@ -125,3 +142,4 @@ export async function getCurrentBusinessContext(): Promise<CurrentBusinessContex
   };
 }
 
+export const getCurrentBusinessContext = cache(fetchCurrentBusinessContext);

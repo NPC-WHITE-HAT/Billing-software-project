@@ -34,13 +34,54 @@ export default async function DashboardPage() {
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-  // 1. Fetch Today's Invoices & Sales
-  const { data: todayInvoices } = await supabase
-    .from("invoices")
-    .select("grand_total")
-    .eq("business_id", businessId)
-    .eq("status", "completed")
-    .gte("created_at", todayStart);
+  const [
+    { data: todayInvoices },
+    { data: monthInvoices },
+    { count: totalCustomersCount },
+    { count: totalProductsCount },
+    { count: totalInvoicesCount },
+    { data: lowStockProducts },
+    { data: recentInvoices },
+  ] = await Promise.all([
+    supabase
+      .from("invoices")
+      .select("grand_total")
+      .eq("business_id", businessId)
+      .eq("status", "completed")
+      .gte("created_at", todayStart),
+    supabase
+      .from("invoices")
+      .select("grand_total")
+      .eq("business_id", businessId)
+      .eq("status", "completed")
+      .gte("created_at", monthStart),
+    supabase
+      .from("customers")
+      .select("*", { count: "exact", head: true })
+      .eq("business_id", businessId),
+    supabase
+      .from("products")
+      .select("*", { count: "exact", head: true })
+      .eq("business_id", businessId)
+      .eq("is_active", true),
+    supabase
+      .from("invoices")
+      .select("*", { count: "exact", head: true })
+      .eq("business_id", businessId),
+    supabase
+      .from("products")
+      .select("id, name, sku, stock_quantity, low_stock_threshold")
+      .eq("business_id", businessId)
+      .eq("is_active", true)
+      .order("stock_quantity", { ascending: true })
+      .limit(10),
+    supabase
+      .from("invoices")
+      .select("id, invoice_number, customer_name_snapshot, customer_phone_snapshot, grand_total, payment_status, created_at")
+      .eq("business_id", businessId)
+      .order("created_at", { ascending: false })
+      .limit(6),
+  ]);
 
   const todaySales = (todayInvoices || []).reduce(
     (sum, inv) => sum + Number(inv.grand_total || 0),
@@ -48,203 +89,162 @@ export default async function DashboardPage() {
   );
   const todayInvoicesCount = (todayInvoices || []).length;
 
-  // 2. Fetch Monthly Sales
-  const { data: monthInvoices } = await supabase
-    .from("invoices")
-    .select("grand_total")
-    .eq("business_id", businessId)
-    .eq("status", "completed")
-    .gte("created_at", monthStart);
-
   const monthSales = (monthInvoices || []).reduce(
     (sum, inv) => sum + Number(inv.grand_total || 0),
     0
   );
   const monthInvoicesCount = (monthInvoices || []).length;
 
-  // 3. Total Customers Count
-  const { count: totalCustomersCount } = await supabase
-    .from("customers")
-    .select("*", { count: "exact", head: true })
-    .eq("business_id", businessId);
-
-  // 4. Total Active Products Count
-  const { count: totalProductsCount } = await supabase
-    .from("products")
-    .select("*", { count: "exact", head: true })
-    .eq("business_id", businessId)
-    .eq("is_active", true);
-
-  // 5. Total Invoices Count
-  const { count: totalInvoicesCount } = await supabase
-    .from("invoices")
-    .select("*", { count: "exact", head: true })
-    .eq("business_id", businessId);
-
-  // 6. Low Stock Products
-  const { data: lowStockProducts } = await supabase
-    .from("products")
-    .select("id, name, sku, stock_quantity, low_stock_threshold")
-    .eq("business_id", businessId)
-    .eq("is_active", true)
-    .order("stock_quantity", { ascending: true })
-    .limit(10);
-
   const actualLowStock = (lowStockProducts || []).filter(
     (p) => p.stock_quantity <= p.low_stock_threshold
   );
 
-  // 7. Recent Invoices
-  const { data: recentInvoices } = await supabase
-    .from("invoices")
-    .select("id, invoice_number, customer_name_snapshot, customer_phone_snapshot, grand_total, payment_status, created_at")
-    .eq("business_id", businessId)
-    .order("created_at", { ascending: false })
-    .limit(6);
-
   return (
-    <div className="space-y-8">
+    <div className="-m-4 min-h-full space-y-6 bg-slate-50 p-4 text-slate-900 sm:-m-6 sm:space-y-8 sm:p-6 lg:p-8">
       {/* Welcome Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-gradient-to-r from-blue-900/40 via-slate-900 to-slate-900 border border-blue-500/20 rounded-2xl p-6 shadow-xl">
+      <section className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-7">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">
+            Business overview
+          </p>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             Welcome back, {context.user.fullName}
           </h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm text-slate-500">
             {context.business.name} &bull; Main Branch Retail Terminal
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Link
             href="/billing"
-            className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-500 transition"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
           >
             <ReceiptText className="w-4 h-4" />
             <span>Open POS Terminal</span>
           </Link>
           <Link
             href="/products"
-            className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-2.5 text-sm font-medium text-slate-200 hover:bg-slate-700 transition"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Add Product</span>
           </Link>
         </div>
-      </div>
+      </section>
 
       {/* Metric Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <section aria-label="Business metrics" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {/* Today's Sales */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-lg">
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               Today&apos;s Sales
             </span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-3 text-2xl font-bold text-white font-mono">
+          <div className="mt-4 text-2xl font-bold tracking-tight text-slate-900 tabular-nums">
             {formatCurrency(todaySales)}
           </div>
-          <div className="mt-1 text-xs text-slate-400 flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5 text-slate-500" />
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
+            <Clock className="h-3.5 w-3.5 text-slate-400" />
             <span>{todayInvoicesCount} invoices billed today</span>
           </div>
-        </div>
+        </article>
 
         {/* Monthly Sales */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-lg">
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               This Month
             </span>
-            <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
               <CalendarDays className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-3 text-2xl font-bold text-white font-mono">
+          <div className="mt-4 text-2xl font-bold tracking-tight text-slate-900 tabular-nums">
             {formatCurrency(monthSales)}
           </div>
-          <div className="mt-1 text-xs text-slate-400">
+          <div className="mt-2 text-xs text-slate-500">
             {monthInvoicesCount} invoices this month
           </div>
-        </div>
+        </article>
 
         {/* Total Customers */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-lg">
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               Total Customers
             </span>
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
               <Users className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-3 text-2xl font-bold text-white font-mono">
+          <div className="mt-4 text-2xl font-bold tracking-tight text-slate-900 tabular-nums">
             {totalCustomersCount ?? 0}
           </div>
-          <div className="mt-1 text-xs text-slate-400">
+          <div className="mt-2 text-xs text-slate-500">
             Registered customer profiles
           </div>
-        </div>
+        </article>
 
         {/* Total Products & Low Stock */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-lg">
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               Active Inventory
             </span>
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-700">
               <Package className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-3 text-2xl font-bold text-white font-mono">
+          <div className="mt-4 text-2xl font-bold tracking-tight text-slate-900 tabular-nums">
             {totalProductsCount ?? 0}
           </div>
-          <div className="mt-1 text-xs text-amber-400 flex items-center gap-1">
-            <AlertTriangle className="w-3.5 h-3.5" />
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-700">
+            <AlertTriangle className="h-3.5 w-3.5" />
             <span>{actualLowStock.length} items low in stock</span>
           </div>
-        </div>
-      </div>
+        </article>
+      </section>
 
       {/* Two Column Section: Recent Invoices & Low Stock Alert */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <section aria-label="Recent activity and stock alerts" className="grid grid-cols-1 gap-5 xl:grid-cols-3">
         {/* Recent Invoices Table (2 cols) */}
-        <div className="lg:col-span-2 rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl">
-          <div className="flex items-center justify-between mb-4">
+        <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 xl:col-span-2">
+          <div className="mb-5 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold text-white">Recent Invoices</h2>
-              <p className="text-xs text-slate-400">
+              <h2 className="text-base font-semibold text-slate-900">Recent Invoices</h2>
+              <p className="mt-1 text-xs text-slate-500">
                 Latest customer billing transactions ({totalInvoicesCount ?? 0} total)
               </p>
             </div>
             <Link
               href="/reports"
-              className="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1 transition"
+              className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-blue-700 transition hover:text-blue-800"
             >
               View all <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
           {(!recentInvoices || recentInvoices.length === 0) ? (
-            <div className="py-12 text-center text-slate-500 border border-dashed border-slate-800 rounded-xl">
-              <Receipt className="w-8 h-8 mx-auto mb-2 opacity-40" />
-              <p className="text-sm font-medium">No invoices generated yet</p>
-              <p className="text-xs mt-1">Start by creating your first bill in POS Terminal</p>
+            <div className="rounded-xl border border-dashed border-slate-200 py-12 text-center text-slate-500">
+              <Receipt className="mx-auto mb-2 h-8 w-8 text-slate-300" />
+              <p className="text-sm font-medium text-slate-700">No invoices generated yet</p>
+              <p className="mt-1 text-xs text-slate-500">Start by creating your first bill in POS Terminal</p>
               <Link
                 href="/billing"
-                className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 rounded-xl bg-blue-600 text-xs font-semibold text-white hover:bg-blue-500 transition"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700"
               >
                 <PlusCircle className="w-3.5 h-3.5" /> Create Bill
               </Link>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full min-w-[640px] text-left text-sm">
                 <thead>
-                  <tr className="border-b border-slate-800 text-[11px] uppercase tracking-wider text-slate-400">
+                  <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500">
                     <th className="pb-3 font-semibold">Invoice #</th>
                     <th className="pb-3 font-semibold">Customer</th>
                     <th className="pb-3 font-semibold">Date & Time</th>
@@ -252,28 +252,28 @@ export default async function DashboardPage() {
                     <th className="pb-3 font-semibold text-right">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60">
+                <tbody className="divide-y divide-slate-100">
                   {recentInvoices.map((inv) => (
-                    <tr key={inv.id} className="hover:bg-slate-800/30 transition">
-                      <td className="py-3 font-mono font-semibold text-blue-400">
+                    <tr key={inv.id} className="transition-colors hover:bg-slate-50">
+                      <td className="py-3 font-mono font-semibold text-blue-700">
                         {inv.invoice_number}
                       </td>
-                      <td className="py-3 text-slate-200">
-                        <div>{inv.customer_name_snapshot}</div>
+                      <td className="py-3 text-slate-700">
+                        <div className="font-medium text-slate-800">{inv.customer_name_snapshot}</div>
                         {inv.customer_phone_snapshot && (
-                          <div className="text-[11px] text-slate-500 font-mono">
+                          <div className="font-mono text-[11px] text-slate-400">
                             {inv.customer_phone_snapshot}
                           </div>
                         )}
                       </td>
-                      <td className="py-3 text-slate-400 text-xs">
+                      <td className="py-3 text-xs text-slate-500">
                         {formatDate(inv.created_at)}
                       </td>
-                      <td className="py-3 text-right font-mono font-semibold text-white">
+                      <td className="py-3 text-right font-mono font-semibold text-slate-900 tabular-nums">
                         {formatCurrency(inv.grand_total)}
                       </td>
                       <td className="py-3 text-right">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                           {inv.payment_status}
                         </span>
                       </td>
@@ -286,43 +286,43 @@ export default async function DashboardPage() {
         </div>
 
         {/* Low Stock Alerts (1 col) */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl">
-          <div className="flex items-center justify-between mb-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+          <div className="mb-5 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold text-white">Stock Alerts</h2>
-              <p className="text-xs text-slate-400">Items nearing replenishment threshold</p>
+              <h2 className="text-base font-semibold text-slate-900">Stock Alerts</h2>
+              <p className="mt-1 text-xs text-slate-500">Items nearing replenishment threshold</p>
             </div>
             <Link
               href="/inventory"
-              className="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1 transition"
+              className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-blue-700 transition hover:text-blue-800"
             >
               Stock <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
           {actualLowStock.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 border border-dashed border-slate-800 rounded-xl">
-              <Package className="w-8 h-8 mx-auto mb-2 opacity-40 text-emerald-400" />
-              <p className="text-sm font-medium text-slate-300">Stock Levels Healthy</p>
-              <p className="text-xs mt-1">No products are currently below their low-stock limit.</p>
+            <div className="rounded-xl border border-dashed border-slate-200 py-12 text-center text-slate-500">
+              <Package className="mx-auto mb-2 h-8 w-8 text-emerald-600" />
+              <p className="text-sm font-medium text-slate-700">Stock Levels Healthy</p>
+              <p className="mt-1 text-xs text-slate-500">No products are currently below their low-stock limit.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {actualLowStock.map((prod) => (
                 <div
                   key={prod.id}
-                  className="flex items-center justify-between p-3 rounded-xl border border-amber-500/20 bg-amber-500/5"
+                  className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50/70 p-3"
                 >
                   <div className="min-w-0 pr-2">
-                    <div className="text-sm font-semibold text-slate-200 truncate">
+                    <div className="truncate text-sm font-semibold text-slate-800">
                       {prod.name}
                     </div>
-                    <div className="text-xs font-mono text-slate-400">
+                    <div className="font-mono text-xs text-slate-500">
                       SKU: {prod.sku}
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="text-sm font-bold font-mono text-amber-400">
+                    <div className="font-mono text-sm font-bold text-amber-700">
                       {prod.stock_quantity} Left
                     </div>
                     <div className="text-[10px] text-slate-500">
@@ -334,8 +334,7 @@ export default async function DashboardPage() {
             </div>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }
-

@@ -19,7 +19,7 @@ export default async function InventoryPage() {
   // 1. Fetch active products with categories
   const { data: products } = await supabase
     .from("products")
-    .select("id, name, sku, category_id, selling_price, stock_quantity, low_stock_threshold, category:categories(name)")
+    .select("id, name, sku, category_id, selling_price, stock_quantity, low_stock_threshold, category:categories!qelanto_products_category_business_fk(name)")
     .eq("business_id", businessId)
     .eq("is_active", true)
     .order("stock_quantity", { ascending: true });

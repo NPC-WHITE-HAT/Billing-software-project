@@ -19,8 +19,8 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white selection:bg-blue-500 selection:text-white flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto w-full">
+    <main className="public-auth flex min-h-screen flex-col justify-center px-4 py-8 selection:bg-blue-500 selection:text-white sm:px-6 sm:py-12 lg:px-8">
+      <div className="mx-auto w-full max-w-3xl">
         <OnboardingForm userEmail={user.email || ""} />
       </div>
     </main>

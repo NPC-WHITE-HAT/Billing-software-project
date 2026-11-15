@@ -27,12 +27,27 @@ export default async function ReportsPage() {
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-  // 1. Fetch all completed invoices for this business
-  const { data: allInvoices } = await supabase
-    .from("invoices")
-    .select("id, invoice_number, customer_name_snapshot, customer_phone_snapshot, grand_total, payment_status, created_at, payments:payments(payment_method)")
-    .eq("business_id", businessId)
-    .order("created_at", { ascending: false });
+  const [
+    { data: allInvoices },
+    { data: rawItems },
+    { data: stockItems },
+  ] = await Promise.all([
+    supabase
+      .from("invoices")
+      .select("id, invoice_number, customer_name_snapshot, customer_phone_snapshot, grand_total, payment_status, created_at, payments:payments!qelanto_payments_invoice_business_fk(payment_method)")
+      .eq("business_id", businessId)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("invoice_items")
+      .select("product_id, product_name_snapshot, sku_snapshot, quantity, total_price, invoice:invoices!inner(business_id)")
+      .eq("invoice.business_id", businessId),
+    supabase
+      .from("products")
+      .select("id, name, sku, stock_quantity, selling_price, purchase_price, low_stock_threshold")
+      .eq("business_id", businessId)
+      .eq("is_active", true)
+      .order("name", { ascending: true }),
+  ]);
 
   const invoiceList: InvoiceReportItem[] = (allInvoices || []).map((inv) => {
     const payMethod = inv.payments?.[0]?.payment_method || "cash";
@@ -120,12 +135,6 @@ export default async function ReportsPage() {
     })
   );
 
-  // 2. Fetch Best-Selling Products from invoice_items
-  const { data: rawItems } = await supabase
-    .from("invoice_items")
-    .select("product_id, product_name_snapshot, sku_snapshot, quantity, total_price, invoice:invoices!inner(business_id)")
-    .eq("invoice.business_id", businessId);
-
   const prodAggMap = new Map<string, { name: string; sku: string; qty: number; rev: number }>();
 
   (rawItems || []).forEach((item) => {
@@ -151,14 +160,6 @@ export default async function ReportsPage() {
     }))
     .sort((a, b) => b.totalQuantity - a.totalQuantity)
     .slice(0, 10);
-
-  // 3. Stock Report
-  const { data: stockItems } = await supabase
-    .from("products")
-    .select("id, name, sku, stock_quantity, selling_price, purchase_price, low_stock_threshold")
-    .eq("business_id", businessId)
-    .eq("is_active", true)
-    .order("name", { ascending: true });
 
   const stockReport: StockReportItem[] = (stockItems || []).map((p) => ({
     id: p.id,
@@ -198,4 +199,3 @@ export default async function ReportsPage() {
     </div>
   );
 }
-
