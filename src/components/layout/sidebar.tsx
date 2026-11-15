@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -11,7 +12,6 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  Store,
   Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -59,8 +59,14 @@ export default function Sidebar({ business, user, role }: SidebarProps) {
         {/* Brand & Store Header */}
         <div className="flex items-center justify-between border-b border-slate-200 p-3 sm:p-4 lg:block lg:p-5">
           <div className="flex min-w-0 items-center gap-3 lg:mb-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600/10 border border-blue-500/20 text-blue-500 flex items-center justify-center font-bold">
-              <Store className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-200 shadow-sm flex items-center justify-center bg-white shrink-0">
+              <Image
+                src="/logo.jpg"
+                alt="Qelanto Logo"
+                width={40}
+                height={40}
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="min-w-0">
               <div className="text-xs font-semibold tracking-wider uppercase text-blue-700">
@@ -96,6 +102,7 @@ export default function Sidebar({ business, user, role }: SidebarProps) {
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={true}
                 aria-current={isActive ? "page" : undefined}
                 className={`flex shrink-0 items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition lg:w-full lg:px-3.5 ${
                   isActive

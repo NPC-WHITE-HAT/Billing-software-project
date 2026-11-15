@@ -25,23 +25,48 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const businessId = context.business.id;
 
-  // 1. Fetch invoice, items, payments, and customer
-  const { data: invoice, error: invError } = await supabase
-    .from("invoices")
-    .select("*, items:invoice_items(*), customer:customers(*), payments:payments(*)")
-    .eq("id", invoiceId)
-    .eq("business_id", businessId)
-    .single();
+  // 1. Fetch invoice, items, payments, and customer explicitly
+  const [invoiceResult, itemsResult, paymentsResult] = await Promise.all([
+    supabase
+      .from("invoices")
+      .select("*")
+      .eq("id", invoiceId)
+      .eq("business_id", businessId)
+      .single(),
+    supabase
+      .from("invoice_items")
+      .select("*")
+      .eq("invoice_id", invoiceId),
+    supabase
+      .from("payments")
+      .select("*")
+      .eq("invoice_id", invoiceId),
+  ]);
 
-  if (invError || !invoice) {
+  const { data: rawInvoice, error: invError } = invoiceResult;
+  if (invError || !rawInvoice) {
     return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
   }
 
-  // 2. Check customer WhatsApp consent
-  const customer = Array.isArray(invoice.customer)
-    ? invoice.customer[0]
-    : invoice.customer;
+  // Fetch optional customer
+  let customer = null;
+  if (rawInvoice.customer_id) {
+    const { data: custData } = await supabase
+      .from("customers")
+      .select("*")
+      .eq("id", rawInvoice.customer_id)
+      .maybeSingle();
+    customer = custData;
+  }
 
+  const invoice = {
+    ...rawInvoice,
+    items: itemsResult.data || [],
+    payments: paymentsResult.data || [],
+    customer,
+  };
+
+  // 2. Check recipient phone
   const recipientPhone =
     customer?.phone || invoice.customer_phone_snapshot;
 

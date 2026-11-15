@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import Image from "next/image";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -17,14 +18,31 @@ export default async function PrintInvoicePage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
-  // 1. Fetch invoice with line items & payment
-  const { data: invoice, error: invError } = await supabase
-    .from("invoices")
-    .select("*, items:invoice_items(*), payments:payments(*)")
-    .eq("id", id)
-    .single();
+  // 1. Fetch invoice with line items & payment explicitly using foreign keys
+  const [invoiceResult, itemsResult, paymentsResult] = await Promise.all([
+    supabase
+      .from("invoices")
+      .select("*")
+      .eq("id", id)
+      .single(),
+    supabase
+      .from("invoice_items")
+      .select("*")
+      .eq("invoice_id", id),
+    supabase
+      .from("payments")
+      .select("*")
+      .eq("invoice_id", id),
+  ]);
+
+  const { data: invoice, error: invError } = invoiceResult;
+  const items = itemsResult.data || [];
+  const payments = paymentsResult.data || [];
 
   if (invError || !invoice) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("[invoice-print] Invoice query failed:", invError);
+    }
     notFound();
   }
 
@@ -42,7 +60,6 @@ export default async function PrintInvoicePage({ params }: PageProps) {
     .eq("id", invoice.branch_id || "")
     .maybeSingle();
 
-  const payments = invoice.payments || [];
   const primaryPayment = payments[0];
 
   return (
@@ -148,7 +165,7 @@ export default async function PrintInvoicePage({ params }: PageProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {invoice.items?.map((item: { id: string; product_name_snapshot: string; sku_snapshot: string; quantity: number; unit_price: number; total_price: number }, idx: number) => (
+              {items.map((item: { id: string; product_name_snapshot: string; sku_snapshot: string; quantity: number; unit_price: number; total_price: number }, idx: number) => (
                 <tr key={item.id} className="py-2">
                   <td className="py-2.5 text-slate-500">{idx + 1}</td>
                   <td className="py-2.5 font-semibold text-slate-900">

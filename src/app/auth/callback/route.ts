@@ -4,15 +4,11 @@ import { createServerClient } from "@supabase/ssr";
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const next = requestUrl.searchParams.get("next") || "/dashboard";
+  const token_hash = requestUrl.searchParams.get("token_hash");
+  const type = requestUrl.searchParams.get("type") as "signup" | "email" | "recovery" | "invite" | null;
+  const next = requestUrl.searchParams.get("next") || "/onboarding";
 
-  if (!code) {
-    return NextResponse.redirect(
-      new URL("/login?error=missing_code", request.url)
-    );
-  }
-
-  const response = NextResponse.redirect(new URL(next, request.url));
+  const redirectResponse = NextResponse.redirect(new URL(next, request.url));
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,20 +20,38 @@ export async function GET(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
+            redirectResponse.cookies.set(name, value, options);
           });
         },
       },
     }
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  // 1. Handle standard OTP / Email verification token_hash
+  if (token_hash && type) {
+    const { error } = await supabase.auth.verifyOtp({
+      type,
+      token_hash,
+    });
 
-  if (error) {
+    if (!error) {
+      return redirectResponse;
+    }
+  }
+
+  // 2. Handle PKCE code exchange
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      return redirectResponse;
+    }
+
+    // If PKCE fails because email was opened in a different browser/device (mobile vs laptop),
+    // redirect to login with a friendly success banner so the user can simply sign in!
     return NextResponse.redirect(
-      new URL(`/login?error=${encodeURIComponent(error.message)}`, request.url)
+      new URL("/login?verified=true", request.url)
     );
   }
 
-  return response;
+  return NextResponse.redirect(new URL("/login", request.url));
 }

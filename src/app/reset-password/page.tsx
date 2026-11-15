@@ -2,8 +2,9 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-import { KeyRound, ArrowRight, Loader2, AlertCircle } from "lucide-react";
+import { ArrowRight, Loader2, AlertCircle } from "lucide-react";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -53,10 +54,17 @@ export default function ResetPasswordPage() {
     <main className="public-auth flex min-h-screen items-center justify-center p-4 selection:bg-blue-500 selection:text-white sm:p-6">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600/10 border border-blue-500/20 text-blue-500 mb-4 shadow-lg shadow-blue-500/5">
-            <KeyRound className="w-7 h-7" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl overflow-hidden border border-slate-700 bg-white mb-4 shadow-lg shadow-blue-500/10">
+            <Image
+              src="/logo.jpg"
+              alt="Qelanto Logo"
+              width={64}
+              height={64}
+              className="w-full h-full object-cover"
+              priority
+            />
           </div>
-          <p className="text-sm font-semibold text-blue-700">Qelanto Business OS</p>
+          <p className="text-sm font-semibold text-blue-500">Qelanto Business OS</p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">
             Set a New Password
           </h1>

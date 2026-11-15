@@ -61,6 +61,17 @@ export default function InvoiceSuccessModal({
     }
   }
 
+  function handleDirectWhatsApp() {
+    if (!customerPhone) return;
+    const cleanPhone = customerPhone.replace(/\D/g, "");
+    const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+    const billUrl = `${window.location.origin}/invoices/${invoiceId}/print`;
+    const message = encodeURIComponent(
+      `Hello ${customerName || "Valued Customer"}! 🙏\n\nThank you for shopping with us!\nYour Tax Invoice *${invoiceNumber}* for *₹${grandTotal.toFixed(2)}* is ready.\n\n📄 View / Download your Bill PDF here:\n${billUrl}\n\nHave a wonderful day!`
+    );
+    window.open(`https://wa.me/${formattedPhone}?text=${message}`, "_blank");
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-2xl">
@@ -101,23 +112,32 @@ export default function InvoiceSuccessModal({
             <span>Print / Save Tax Invoice (PDF)</span>
           </button>
 
-          {customerPhone && hasWhatsappConsent && (
+          {customerPhone ? (
             <button
-              onClick={handleSendWhatsapp}
-              disabled={sendingWhatsapp}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-50"
+              onClick={handleDirectWhatsApp}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm shadow-emerald-600/20 transition hover:bg-emerald-700"
             >
-              {sendingWhatsapp ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Sending via Meta Cloud API...</span>
-                </>
-              ) : (
-                <>
-                  <MessageSquare className="w-4 h-4" />
-                  <span>Send PDF Receipt to WhatsApp</span>
-                </>
-              )}
+              <MessageSquare className="w-4 h-4" />
+              <span>Send Bill to WhatsApp (Direct & PDF Link)</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                const phone = prompt("Enter customer WhatsApp mobile number (10 digits):");
+                if (phone && phone.trim().length >= 10) {
+                  const cleanPhone = phone.replace(/\D/g, "");
+                  const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+                  const billUrl = `${window.location.origin}/invoices/${invoiceId}/print`;
+                  const message = encodeURIComponent(
+                    `Hello Valued Customer! 🙏\n\nThank you for shopping with us!\nYour Tax Invoice *${invoiceNumber}* for *₹${grandTotal.toFixed(2)}* is ready.\n\n📄 View / Download your Bill PDF here:\n${billUrl}\n\nHave a wonderful day!`
+                  );
+                  window.open(`https://wa.me/${formattedPhone}?text=${message}`, "_blank");
+                }
+              }}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>Send Bill to WhatsApp (Enter Mobile Number)</span>
             </button>
           )}
 

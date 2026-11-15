@@ -2,9 +2,9 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createBusinessOnboarding } from "./actions";
 import {
-  Store,
   MapPin,
   Building2,
   FileText,
@@ -89,10 +89,17 @@ export default function OnboardingForm({ userEmail }: Props) {
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900/95 p-5 shadow-xl sm:p-8">
       <div className="mb-6 text-center sm:mb-8">
-        <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-600/10 text-blue-500">
-          <Store className="w-7 h-7" />
+        <div className="mb-3 inline-flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden border border-slate-700 bg-white shadow-lg shadow-blue-500/10">
+          <Image
+            src="/logo.jpg"
+            alt="Qelanto Logo"
+            width={64}
+            height={64}
+            className="w-full h-full object-cover"
+            priority
+          />
         </div>
-        <p className="text-sm font-semibold text-blue-700">Qelanto Business OS</p>
+        <p className="text-sm font-semibold text-blue-500">Qelanto Business OS</p>
         <h1 className="mt-1 text-xl font-bold tracking-tight text-white sm:text-2xl">
           Set Up Your Retail Store
         </h1>

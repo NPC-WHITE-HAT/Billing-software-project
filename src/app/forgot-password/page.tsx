@@ -2,8 +2,9 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-import { Store, ArrowLeft, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 
 export default function ForgotPasswordPage() {
   const supabase = createClient();
@@ -47,10 +48,17 @@ export default function ForgotPasswordPage() {
     <main className="public-auth flex min-h-screen items-center justify-center p-4 selection:bg-blue-500 selection:text-white sm:p-6">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600/10 border border-blue-500/20 text-blue-500 mb-4 shadow-lg shadow-blue-500/5">
-            <Store className="w-7 h-7" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl overflow-hidden border border-slate-700 bg-white mb-4 shadow-lg shadow-blue-500/10">
+            <Image
+              src="/logo.jpg"
+              alt="Qelanto Logo"
+              width={64}
+              height={64}
+              className="w-full h-full object-cover"
+              priority
+            />
           </div>
-          <p className="text-sm font-semibold text-blue-700">Qelanto Business OS</p>
+          <p className="text-sm font-semibold text-blue-500">Qelanto Business OS</p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">
             Forgot your password?
           </h1>

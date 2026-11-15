@@ -4,7 +4,7 @@ export default function Loading() {
       role="status"
       aria-label="Loading dashboard"
       aria-busy="true"
-      className="-m-4 min-h-full space-y-6 bg-slate-50 p-4 sm:-m-6 sm:space-y-8 sm:p-6 lg:p-8"
+      className="-m-4 min-h-full space-y-6 bg-slate-50 p-4 sm:-m-6 sm:space-y-8 sm:p-6 lg:p-8 animate-pulse"
     >
       <span className="sr-only">Loading dashboard...</span>
       <div aria-hidden="true" className="h-32 rounded-2xl border border-slate-200 bg-white" />
