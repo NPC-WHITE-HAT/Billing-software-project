@@ -1,5 +1,4 @@
 import { notFound, redirect } from "next/navigation";
-import Image from "next/image";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate } from "@/lib/utils";

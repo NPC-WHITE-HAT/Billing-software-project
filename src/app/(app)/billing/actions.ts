@@ -37,8 +37,12 @@ export async function processInvoiceCreation(payload: CreateInvoicePayload) {
     return { error: "Invoice must contain at least one item." };
   }
 
+  if (!payload.customerPhone || payload.customerPhone.trim().replace(/\D/g, "").length !== 10) {
+    return { error: "Customer 10-digit mobile number is mandatory to create invoice." };
+  }
+
   if (!payload.customerName || payload.customerName.trim().length === 0) {
-    return { error: "Customer name is required (e.g. Walk-in Customer)." };
+    return { error: "Customer name is required." };
   }
 
   const paymentMethod = payload.paymentMethod || "cash";

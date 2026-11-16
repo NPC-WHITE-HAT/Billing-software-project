@@ -21,6 +21,7 @@ import {
   Percent,
   Check,
   Package,
+  MessageSquare,
 } from "lucide-react";
 
 export interface PosProduct {
@@ -88,7 +89,7 @@ export default function PosTerminal({
     invoiceNumber: string;
     grandTotal: number;
     customerName: string;
-    customerPhone: string | null;
+    customerPhone: string;
     hasConsent: boolean;
   } | null>(null);
 
@@ -219,18 +220,25 @@ export default function PosTerminal({
       return;
     }
 
+    const custName = selectedCustomer ? selectedCustomer.name : walkinName.trim() || "Walk-in Customer";
+    const rawPhone = selectedCustomer ? selectedCustomer.phone : walkinPhone.trim();
+    const cleanPhone = rawPhone.replace(/\D/g, "");
+
+    if (cleanPhone.length !== 10) {
+      setSubmissionError("Valid 10-digit customer mobile number is mandatory to create invoice.");
+      return;
+    }
+
     setSubmissionError("");
     setIsSubmitting(true);
 
-    const custName = selectedCustomer ? selectedCustomer.name : walkinName.trim() || "Walk-in Customer";
-    const custPhone = selectedCustomer ? selectedCustomer.phone : walkinPhone.trim() || null;
     const hasConsent = selectedCustomer ? selectedCustomer.whatsapp_consent : false;
 
     try {
       const res = await processInvoiceCreation({
         customerId: selectedCustomer?.id || null,
         customerName: custName,
-        customerPhone: custPhone,
+        customerPhone: cleanPhone,
         items: cart.map((i) => ({
           productId: i.productId,
           name: i.name,
@@ -256,7 +264,7 @@ export default function PosTerminal({
         invoiceNumber: res.invoiceNumber!,
         grandTotal: res.grandTotal!,
         customerName: custName,
-        customerPhone: custPhone,
+        customerPhone: cleanPhone,
         hasConsent,
       });
 
@@ -431,36 +439,75 @@ export default function PosTerminal({
             </div>
 
             {!selectedCustomer ? (
-              <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                <input
-                  type="text"
-                  value={walkinName}
-                  onChange={(e) => setWalkinName(e.target.value)}
-                  placeholder="Walk-in name"
-                  aria-label="Walk-in customer name"
-                  className="min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
-                />
-                <input
-                  type="tel"
-                  value={walkinPhone}
-                  onChange={(e) => setWalkinPhone(e.target.value)}
-                  placeholder="Phone (optional)"
-                  aria-label="Walk-in customer phone"
-                  className="min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
-                />
+              <div className="space-y-1.5">
+                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                  <input
+                    type="text"
+                    value={walkinName}
+                    onChange={(e) => setWalkinName(e.target.value)}
+                    placeholder="Customer Name"
+                    aria-label="Walk-in customer name"
+                    className="min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
+                  />
+                  <div className="relative">
+                    <input
+                      type="tel"
+                      value={walkinPhone}
+                      maxLength={10}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                        setWalkinPhone(digits);
+                      }}
+                      placeholder="Mobile (10 digits) *"
+                      aria-label="Customer mobile number mandatory"
+                      className={`w-full min-w-0 rounded-xl border px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-4 ${
+                        walkinPhone.length === 10
+                          ? "border-emerald-500 bg-emerald-50/20 focus:border-emerald-500 focus:ring-emerald-500/10"
+                          : walkinPhone.length > 0
+                          ? "border-amber-400 bg-amber-50/20 focus:border-amber-500 focus:ring-amber-500/10"
+                          : "border-slate-200 bg-white focus:border-blue-500 focus:ring-blue-500/10"
+                      }`}
+                    />
+                    {walkinPhone.length === 10 && (
+                      <span className="pointer-events-none absolute right-3 top-2.5 flex items-center gap-1 text-[11px] font-bold text-emerald-600">
+                        <Check className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* WhatsApp Status Indicator */}
+                {walkinPhone.length > 0 && (
+                  <div className="flex items-center gap-1.5 text-[11px]">
+                    {walkinPhone.length === 10 ? (
+                      <span className="flex items-center gap-1 font-semibold text-emerald-700">
+                        <MessageSquare className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>WhatsApp found for +91 {walkinPhone} &bull; Ready for instant digital receipt</span>
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 font-medium text-amber-700">
+                        <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
+                        <span>Enter full 10-digit mobile number ({10 - walkinPhone.length} more needed)</span>
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="flex min-w-0 items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs text-emerald-800">
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <div className="break-words font-semibold">{selectedCustomer.name}</div>
-                  <div className="mt-0.5 break-all font-mono">{selectedCustomer.phone}</div>
+              <div className="flex min-w-0 items-start justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-xs text-emerald-900">
+                <div className="flex items-start gap-2">
+                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                  <div className="min-w-0 flex-1">
+                    <div className="break-words font-bold">{selectedCustomer.name}</div>
+                    <div className="mt-0.5 flex items-center gap-1 font-mono text-[11px]">
+                      <MessageSquare className="h-3 w-3 text-emerald-600" />
+                      <span>WhatsApp found: +91 {selectedCustomer.phone}</span>
+                    </div>
+                  </div>
                 </div>
-                {selectedCustomer.whatsapp_consent && (
-                  <span className="shrink-0 rounded-md bg-white/70 px-1.5 py-1 text-[10px] font-semibold text-emerald-700">
-                    WhatsApp Opt-in
-                  </span>
-                )}
+                <span className="shrink-0 rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                  Verified Contact
+                </span>
               </div>
             )}
           </div>
