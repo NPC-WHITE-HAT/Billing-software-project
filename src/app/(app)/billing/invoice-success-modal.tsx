@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { formatCurrency } from "@/lib/utils";
-import { CheckCircle2, Printer, MessageSquare, ArrowRight, FileText } from "lucide-react";
+import { CheckCircle2, Printer, MessageSquare, ArrowRight, FileText, ArrowLeft, X } from "lucide-react";
 import Link from "next/link";
 
 interface Props {
@@ -49,7 +49,26 @@ export default function InvoiceSuccessModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-2xl">
+      <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-2xl">
+        {/* Top Header Back / Close Action */}
+        <div className="mb-2 flex items-center justify-between border-b border-slate-100 pb-3">
+          <button
+            onClick={onClose}
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+            title="Back to POS Terminal"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>Back to POS</span>
+          </button>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Close modal"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700">
           <CheckCircle2 className="w-7 h-7" />
         </div>
